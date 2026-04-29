@@ -1,4 +1,5 @@
 const LOGIN_PAGE = window.location.pathname.includes('/pages/') ? './login.html' : './pages/login.html';
+const DEFAULT_REMOTE_API_BASE = 'https://studyplanhub-backend.onrender.com/api';
 
 function normalizeApiBase(base) {
   return String(base || '').trim().replace(/\/+$/, '');
@@ -6,6 +7,10 @@ function normalizeApiBase(base) {
 
 function isLocalHostname(hostname) {
   return ['localhost', '127.0.0.1', '::1'].includes(hostname);
+}
+
+function isRenderHostname(hostname) {
+  return hostname.endsWith('.onrender.com');
 }
 
 function buildApiBaseCandidates() {
@@ -20,10 +25,14 @@ function buildApiBaseCandidates() {
   if (protocol !== 'file:' && isLocalHostname(hostname)) {
     candidates.push(`${protocol}//${hostname}:5174/api`);
     candidates.push(`${origin}/api`);
+  } else if (protocol !== 'file:' && isRenderHostname(hostname)) {
+    candidates.push(DEFAULT_REMOTE_API_BASE);
+    candidates.push(`${origin}/api`);
   } else if (protocol !== 'file:') {
     candidates.push(`${origin}/api`);
   }
 
+  candidates.push(DEFAULT_REMOTE_API_BASE);
   candidates.push('http://localhost:5174/api');
   candidates.push('http://127.0.0.1:5174/api');
 
@@ -157,8 +166,13 @@ class ApiClient {
         }
 
         const data = await response.json();
-        this.accessToken = data.data.accessToken;
-        this.refreshToken = data.data.refreshToken;
+        const tokens = data?.data ?? data;
+        if (!tokens?.accessToken || !tokens?.refreshToken) {
+          continue;
+        }
+
+        this.accessToken = tokens.accessToken;
+        this.refreshToken = tokens.refreshToken;
         this.apiBase = base;
 
         localStorage.setItem('accessToken', this.accessToken);
@@ -189,14 +203,19 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
+    const tokens = data?.data ?? data;
 
-    this.accessToken = data.accessToken;
-    this.refreshToken = data.refreshToken;
+    if (!tokens?.accessToken || !tokens?.refreshToken) {
+      throw new Error('Login succeeded, but the server did not return session tokens.');
+    }
 
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    this.accessToken = tokens.accessToken;
+    this.refreshToken = tokens.refreshToken;
 
-    return data;
+    localStorage.setItem('accessToken', tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+
+    return tokens;
   }
 
   async logout() {

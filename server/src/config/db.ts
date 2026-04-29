@@ -28,11 +28,28 @@ const connectionString = normalizeConnectionString(
   process.env.DATABASE_URL || process.env.CONNECTION_URL,
 );
 
+const shouldUseSsl = () => {
+  if (process.env.DATABASE_SSL === 'true') {
+    return true;
+  }
+
+  if (process.env.DATABASE_SSL === 'false' || !connectionString) {
+    return false;
+  }
+
+  try {
+    const url = new URL(connectionString);
+    return url.searchParams.get('sslmode') === 'require' || url.hostname.includes('neon.tech');
+  } catch {
+    return false;
+  }
+};
+
 const pool = new Pool({
   connectionString,
-  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  max: 10,                 // max connections in pool
-  min: 2,                  // keep 2 warm connections always ready
+  ssl: shouldUseSsl() ? { rejectUnauthorized: false } : false,
+  max: 5,
+  min: 0,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 });

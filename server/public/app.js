@@ -1,4 +1,7 @@
-const API_BASE = '/api';
+const DEFAULT_REMOTE_API_BASE = 'https://studyplanhub-backend.onrender.com/api';
+const isLocalHostname = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+const API_BASE = window.__STUDYPLAN_API_BASE__
+  || (isLocalHostname ? '/api' : DEFAULT_REMOTE_API_BASE);
 
 const storage = {
   get(key) {
@@ -34,12 +37,15 @@ const refreshAccessToken = async () => {
   }
 
   const result = await response.json();
-  if (result.data) {
-    storage.set('accessToken', result.data.accessToken);
-    storage.set('refreshToken', result.data.refreshToken);
-    return result.data.accessToken;
+  const tokens = result?.data ?? result;
+  if (tokens?.accessToken && tokens?.refreshToken) {
+    storage.set('accessToken', tokens.accessToken);
+    storage.set('refreshToken', tokens.refreshToken);
+    return tokens.accessToken;
   }
 
+  storage.remove('accessToken');
+  storage.remove('refreshToken');
   return null;
 };
 
@@ -64,11 +70,14 @@ const authFetch = async (path, options = {}) => {
 };
 
 const handleApiResponse = async (response) => {
-  const payload = await response.json().catch(() => ({ message: response.statusText }));
+  const payload = await response.json().catch(() => null);
+  const message = payload?.message || response.statusText || 'API request failed';
+
   if (!response.ok) {
-    throw payload;
+    throw new Error(message);
   }
-  return payload.data;
+
+  return payload?.data ?? payload;
 };
 
 const routeTo = (path) => {
@@ -141,8 +150,12 @@ const initAuthForms = () => {
           body: JSON.stringify(data),
         });
         const result = await handleApiResponse(response);
-        storage.set('accessToken', result.accessToken);
-        storage.set('refreshToken', result.refreshToken);
+        const tokens = result?.data ?? result;
+        if (!tokens?.accessToken || !tokens?.refreshToken) {
+          throw new Error('Login succeeded, but the server did not return session tokens.');
+        }
+        storage.set('accessToken', tokens.accessToken);
+        storage.set('refreshToken', tokens.refreshToken);
         routeTo('dashboard.html');
       } catch (error) {
         showMessage('#loginMessage', error.message || 'Login failed');
@@ -326,7 +339,7 @@ const initPlanPage = async () => {
       followButton.textContent = 'Login to follow';
       followButton.disabled = true;
       progressForm?.querySelectorAll('input, button').forEach((control) => {
-        (control as HTMLInputElement | HTMLButtonElement).disabled = true;
+        control.disabled = true;
       });
       rateButton?.setAttribute('disabled', 'true');
     }
@@ -372,7 +385,7 @@ const initCreateEditPage = async () => {
           if (field.tagName === 'TEXTAREA') {
             field.textContent = data[name];
           } else {
-            (field as HTMLInputElement).value = data[name];
+            field.value = data[name];
           }
         }
       });
@@ -401,9 +414,9 @@ const initCreateEditPage = async () => {
 
     const taskRows = tasksContainer?.querySelectorAll('.task-item') || [];
     taskRows.forEach((row) => {
-      const day = (row.querySelector('[name="taskDay"]') as HTMLInputElement).value;
-      const title = (row.querySelector('[name="taskTitle"]') as HTMLInputElement).value;
-      const description = (row.querySelector('[name="taskDescription"]') as HTMLInputElement).value;
+      const day = row.querySelector('[name="taskDay"]').value;
+      const title = row.querySelector('[name="taskTitle"]').value;
+      const description = row.querySelector('[name="taskDescription"]').value;
       if (day && title && description) {
         payload.tasks.push({ day: Number(day), title, description });
       }
