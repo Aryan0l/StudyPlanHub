@@ -964,7 +964,7 @@ async function hydratePlanView() {
             <span class="meta-pill">${followers} follower${followers === 1 ? '' : 's'}</span>
             <span class="meta-pill">${tasks.length} task${tasks.length === 1 ? '' : 's'}</span>
           </div>
-          ${isOwner ? `<div class="footer-actions"><button type="button" class="btn btn-secondary" onclick="openPlanner(${plan.id})">Edit Plan</button></div>` : ''}
+          ${isOwner ? `<div class="study-owner-actions"><button type="button" class="btn btn-secondary" onclick="openPlanner(${plan.id})">Edit Plan</button></div>` : ''}
         </div>
 
         <aside class="study-side">

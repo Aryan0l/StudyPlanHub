@@ -1368,6 +1368,15 @@ body[data-page='home'] .page-shell {
   margin-top: 1.15rem;
 }
 
+.study-owner-actions {
+  display: flex;
+  margin-top: 0.9rem;
+}
+
+.study-owner-actions .btn {
+  min-width: 11rem;
+}
+
 .study-side {
   display: grid;
   gap: 0.85rem;
