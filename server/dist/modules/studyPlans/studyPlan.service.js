@@ -33,14 +33,15 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ratePlan = exports.updateProgress = exports.getPlanProgress = exports.unfollowPlan = exports.followPlan = exports.deletePlan = exports.updatePlan = exports.getPlanById = exports.getPopularPlans = exports.getPlans = exports.createPlan = void 0;
+exports.addPlanComment = exports.getPlanComments = exports.ratePlan = exports.updateProgress = exports.getPlanProgress = exports.unfollowPlan = exports.followPlan = exports.deletePlan = exports.updatePlan = exports.getPlanById = exports.getPopularPlans = exports.getPlans = exports.createPlan = void 0;
 const planModel = __importStar(require("./studyPlan.store"));
 const taskModel = __importStar(require("./task.store"));
 const followModel = __importStar(require("./follow.store"));
 const progressModel = __importStar(require("./progress.store"));
 const ratingModel = __importStar(require("./rating.store"));
+const commentModel = __importStar(require("./comment.store"));
 const createPlan = async (userId, payload) => {
-    const plan = await planModel.createStudyPlan(userId, payload.title, payload.description, payload.subject, payload.durationDays);
+    const plan = await planModel.createStudyPlan(userId, payload.title, payload.description, payload.subject, payload.difficulty || 'Beginner', payload.durationDays);
     const tasks = await taskModel.insertPlanTasks(plan.id, payload.tasks);
     return { ...plan, tasks };
 };
@@ -162,3 +163,19 @@ const ratePlan = async (userId, planId, rating) => {
     return { planId, rating, averageRating };
 };
 exports.ratePlan = ratePlan;
+const getPlanComments = async (planId) => {
+    const plan = await planModel.findPlanById(planId);
+    if (!plan) {
+        throw { status: 404, message: 'Study plan not found' };
+    }
+    return commentModel.getPlanComments(planId);
+};
+exports.getPlanComments = getPlanComments;
+const addPlanComment = async (userId, planId, comment) => {
+    const plan = await planModel.findPlanById(planId);
+    if (!plan) {
+        throw { status: 404, message: 'Study plan not found' };
+    }
+    return commentModel.addPlanComment(planId, userId, comment);
+};
+exports.addPlanComment = addPlanComment;

@@ -15,6 +15,7 @@ const statements = [
     description TEXT NOT NULL,
     subject TEXT NOT NULL,
     duration_days INTEGER NOT NULL,
+    difficulty TEXT NOT NULL DEFAULT 'Beginner',
     average_rating NUMERIC(3,2) DEFAULT 0,
     follower_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -58,6 +59,16 @@ const statements = [
     token TEXT NOT NULL UNIQUE,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS plan_comments (
+    id SERIAL PRIMARY KEY,
+    plan_id INTEGER NOT NULL REFERENCES study_plans(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  )`,
+  `ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'Beginner'`,
+  `UPDATE study_plans SET difficulty = 'Beginner' WHERE difficulty IS NULL`,
+  `ALTER TABLE study_plans ALTER COLUMN difficulty SET NOT NULL`,
   `ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS average_rating NUMERIC(3,2) DEFAULT 0`,
   `ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS follower_count INTEGER DEFAULT 0`,
   `ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()`,
@@ -104,6 +115,7 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS idx_followers_plan ON followers(plan_id)`,
   `CREATE INDEX IF NOT EXISTS idx_ratings_plan ON ratings(plan_id)`,
   `CREATE INDEX IF NOT EXISTS idx_progress_user_plan ON progress(user_id, plan_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_comments_plan ON plan_comments(plan_id)`,
 ];
 
 export const initializeDatabase = async () => {

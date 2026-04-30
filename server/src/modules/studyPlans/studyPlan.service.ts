@@ -3,6 +3,7 @@ import * as taskModel from './task.store';
 import * as followModel from './follow.store';
 import * as progressModel from './progress.store';
 import * as ratingModel from './rating.store';
+import * as commentModel from './comment.store';
 
 export const createPlan = async (
   userId: number,
@@ -10,6 +11,7 @@ export const createPlan = async (
     title: string;
     description: string;
     subject: string;
+    difficulty?: string;
     durationDays: number;
     tasks: Array<{ day: number; title: string; description: string }>;
   },
@@ -19,6 +21,7 @@ export const createPlan = async (
     payload.title,
     payload.description,
     payload.subject,
+    payload.difficulty || 'Beginner',
     payload.durationDays,
   );
 
@@ -63,6 +66,7 @@ export const updatePlan = async (
     title: string;
     description: string;
     subject: string;
+    difficulty: string;
     durationDays: number;
     tasks: Array<{ day: number; title: string; description: string }>;
   }>,
@@ -176,4 +180,22 @@ export const ratePlan = async (userId: number, planId: number, rating: number) =
   await planModel.updateAverageRating(planId, averageRating);
 
   return { planId, rating, averageRating };
+};
+
+export const getPlanComments = async (planId: number) => {
+  const plan = await planModel.findPlanById(planId);
+  if (!plan) {
+    throw { status: 404, message: 'Study plan not found' };
+  }
+
+  return commentModel.getPlanComments(planId);
+};
+
+export const addPlanComment = async (userId: number, planId: number, comment: string) => {
+  const plan = await planModel.findPlanById(planId);
+  if (!plan) {
+    throw { status: 404, message: 'Study plan not found' };
+  }
+
+  return commentModel.addPlanComment(planId, userId, comment);
 };

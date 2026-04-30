@@ -100,6 +100,15 @@
                     <input type="number" id="durationDays" name="durationDays" min="1" max="365" placeholder="30" required />
                   </div>
                 </div>
+
+                <div class="form-group">
+                  <label for="difficulty">Difficulty</label>
+                  <select id="difficulty" name="difficulty" required>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
               </div>
 
               <div class="form-section">
@@ -112,7 +121,7 @@
               </div>
 
               <div class="form-actions footer-actions">
-                <button type="submit" class="btn btn-primary">Create Plan</button>
+                <button type="submit" class="btn btn-primary" id="composerSubmitBtn">Create Plan</button>
                 <a href="./workspace.html" class="btn btn-secondary">Cancel</a>
               </div>
             </form>

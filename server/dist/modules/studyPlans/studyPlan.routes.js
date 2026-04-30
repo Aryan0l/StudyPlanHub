@@ -20,4 +20,6 @@ router.delete('/:planId/follow', requireUser_1.authenticate, studyPlan_controlle
 router.get('/:planId/progress', requireUser_1.authenticate, studyPlan_controller_1.getPlanProgress);
 router.post('/:planId/progress', requireUser_1.authenticate, (0, validatePayload_1.validateBody)(schemas_1.progressSchema), studyPlan_controller_1.updateProgress);
 router.post('/:planId/rating', requireUser_1.authenticate, (0, validatePayload_1.validateBody)(schemas_1.ratingSchema), studyPlan_controller_1.ratePlan);
+router.get('/:planId/comments', studyPlan_controller_1.getPlanComments);
+router.post('/:planId/comments', requireUser_1.authenticate, (0, validatePayload_1.validateBody)(schemas_1.commentSchema), studyPlan_controller_1.addPlanComment);
 exports.default = router;

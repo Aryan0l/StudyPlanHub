@@ -21,6 +21,8 @@ const taskSchema = Joi.object({
   description: Joi.string().allow('').required(),
 });
 
+const difficultySchema = Joi.string().valid('Beginner', 'Intermediate', 'Advanced');
+
 const normalizePlanPayload = (value: Record<string, unknown>) => {
   if (!value.subject && typeof value.category === 'string') {
     value.subject = value.category;
@@ -35,6 +37,7 @@ export const planSchema = Joi.object({
   description: Joi.string().min(10).required(),
   subject: Joi.string().min(2).max(100),
   category: Joi.string().min(2).max(100),
+  difficulty: difficultySchema.default('Beginner'),
   durationDays: Joi.number().integer().min(1).required(),
   tasks: Joi.array().items(taskSchema).min(1).required(),
 })
@@ -46,6 +49,7 @@ export const planUpdateSchema = Joi.object({
   description: Joi.string().min(10),
   subject: Joi.string().min(2).max(100),
   category: Joi.string().min(2).max(100),
+  difficulty: difficultySchema,
   durationDays: Joi.number().integer().min(1),
   tasks: Joi.array().items(taskSchema).min(1),
 }).custom(normalizePlanPayload);
@@ -56,4 +60,8 @@ export const progressSchema = Joi.object({
 
 export const ratingSchema = Joi.object({
   rating: Joi.number().integer().min(1).max(5).required(),
+});
+
+export const commentSchema = Joi.object({
+  comment: Joi.string().trim().min(2).max(600).required(),
 });

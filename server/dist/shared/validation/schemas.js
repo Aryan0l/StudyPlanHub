@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ratingSchema = exports.progressSchema = exports.planUpdateSchema = exports.planSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
+exports.commentSchema = exports.ratingSchema = exports.progressSchema = exports.planUpdateSchema = exports.planSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.registerSchema = joi_1.default.object({
     name: joi_1.default.string().min(2).max(100).required(),
@@ -22,6 +22,7 @@ const taskSchema = joi_1.default.object({
     title: joi_1.default.string().min(1).required(),
     description: joi_1.default.string().allow('').required(),
 });
+const difficultySchema = joi_1.default.string().valid('Beginner', 'Intermediate', 'Advanced');
 const normalizePlanPayload = (value) => {
     if (!value.subject && typeof value.category === 'string') {
         value.subject = value.category;
@@ -34,6 +35,7 @@ exports.planSchema = joi_1.default.object({
     description: joi_1.default.string().min(10).required(),
     subject: joi_1.default.string().min(2).max(100),
     category: joi_1.default.string().min(2).max(100),
+    difficulty: difficultySchema.default('Beginner'),
     durationDays: joi_1.default.number().integer().min(1).required(),
     tasks: joi_1.default.array().items(taskSchema).min(1).required(),
 })
@@ -44,6 +46,7 @@ exports.planUpdateSchema = joi_1.default.object({
     description: joi_1.default.string().min(10),
     subject: joi_1.default.string().min(2).max(100),
     category: joi_1.default.string().min(2).max(100),
+    difficulty: difficultySchema,
     durationDays: joi_1.default.number().integer().min(1),
     tasks: joi_1.default.array().items(taskSchema).min(1),
 }).custom(normalizePlanPayload);
@@ -52,4 +55,7 @@ exports.progressSchema = joi_1.default.object({
 });
 exports.ratingSchema = joi_1.default.object({
     rating: joi_1.default.number().integer().min(1).max(5).required(),
+});
+exports.commentSchema = joi_1.default.object({
+    comment: joi_1.default.string().trim().min(2).max(600).required(),
 });

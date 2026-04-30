@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ratePlan = exports.updateProgress = exports.getPlanProgress = exports.unfollowPlan = exports.followPlan = exports.deletePlan = exports.updatePlan = exports.getPlanById = exports.getPopularPlans = exports.getPlans = exports.createPlan = void 0;
+exports.addPlanComment = exports.getPlanComments = exports.ratePlan = exports.updateProgress = exports.getPlanProgress = exports.unfollowPlan = exports.followPlan = exports.deletePlan = exports.updatePlan = exports.getPlanById = exports.getPopularPlans = exports.getPlans = exports.createPlan = void 0;
 const planService = __importStar(require("./studyPlan.service"));
 const createPlan = async (req, res, next) => {
     try {
@@ -165,3 +165,25 @@ const ratePlan = async (req, res, next) => {
     }
 };
 exports.ratePlan = ratePlan;
+const getPlanComments = async (req, res, next) => {
+    try {
+        const planId = Number(req.params.planId);
+        const comments = await planService.getPlanComments(planId);
+        res.json({ success: true, data: comments });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getPlanComments = getPlanComments;
+const addPlanComment = async (req, res, next) => {
+    try {
+        const planId = Number(req.params.planId);
+        const comment = await planService.addPlanComment(req.user.id, planId, req.body.comment);
+        res.status(201).json({ success: true, data: comment });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.addPlanComment = addPlanComment;

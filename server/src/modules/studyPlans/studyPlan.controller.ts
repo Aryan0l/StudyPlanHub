@@ -121,3 +121,23 @@ export const ratePlan = async (req: Request, res: Response, next: NextFunction) 
     next(error);
   }
 };
+
+export const getPlanComments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const planId = Number(req.params.planId);
+    const comments = await planService.getPlanComments(planId);
+    res.json({ success: true, data: comments });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addPlanComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const planId = Number(req.params.planId);
+    const comment = await planService.addPlanComment(req.user!.id, planId, req.body.comment);
+    res.status(201).json({ success: true, data: comment });
+  } catch (error) {
+    next(error);
+  }
+};

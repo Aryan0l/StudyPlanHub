@@ -13,12 +13,15 @@ import {
   updateProgress,
   ratePlan,
   getPopularPlans,
+  getPlanComments,
+  addPlanComment,
 } from './studyPlan.controller';
 import {
   planSchema,
   planUpdateSchema,
   progressSchema,
   ratingSchema,
+  commentSchema,
 } from '../../shared/validation/schemas';
 
 const router = express.Router();
@@ -34,5 +37,7 @@ router.delete('/:planId/follow', authenticate, unfollowPlan);
 router.get('/:planId/progress', authenticate, getPlanProgress);
 router.post('/:planId/progress', authenticate, validateBody(progressSchema), updateProgress);
 router.post('/:planId/rating', authenticate, validateBody(ratingSchema), ratePlan);
+router.get('/:planId/comments', getPlanComments);
+router.post('/:planId/comments', authenticate, validateBody(commentSchema), addPlanComment);
 
 export default router;

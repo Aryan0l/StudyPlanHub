@@ -319,6 +319,19 @@ class StudyPlanGateway {
       body: JSON.stringify({ rating }),
     });
   }
+
+  async getPlanComments(planId) {
+    return this.request(`/plans/${planId}/comments`, {
+      method: 'GET',
+    });
+  }
+
+  async addPlanComment(planId, comment) {
+    return this.request(`/plans/${planId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  }
 }
 
 const studyPlanGateway = new StudyPlanGateway();

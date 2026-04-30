@@ -80,6 +80,14 @@ function getPlanRating(plan) {
   return Number(plan.averageRating ?? plan.average_rating ?? 0);
 }
 
+function getPlanDifficulty(plan) {
+  return plan.difficulty || 'Beginner';
+}
+
+function getPlanCompletion(plan) {
+  return Number(plan.completionRate ?? plan.completion_rate ?? 0);
+}
+
 function updateNavigation() {
   const guestNav = document.getElementById('guestNav');
   const memberNav = document.getElementById('memberNav');
@@ -109,8 +117,8 @@ function openWorkspace() {
   window.location.href = pathToPage('workspace.html');
 }
 
-function openPlanner() {
-  window.location.href = pathToPage('planner.html');
+function openPlanner(planId) {
+  window.location.href = planId ? `${pathToPage('planner.html')}?id=${planId}` : pathToPage('planner.html');
 }
 
 function goHome() {
@@ -158,6 +166,7 @@ function createPlanCard(plan) {
   const duration = getPlanDuration(plan);
   const followers = getPlanFollowerCount(plan);
   const rating = getPlanRating(plan);
+  const difficulty = escapeHtml(getPlanDifficulty(plan));
   const taskCount = Array.isArray(plan.tasks) ? plan.tasks.length : 0;
 
   return `
@@ -175,6 +184,7 @@ function createPlanCard(plan) {
 
         <div class="study-meta-row">
           <span class="meta-pill">${duration} day${duration === 1 ? '' : 's'}</span>
+          <span class="meta-pill">${difficulty}</span>
           <span class="meta-pill">${followers} follower${followers === 1 ? '' : 's'}</span>
         </div>
 
@@ -214,6 +224,19 @@ function createDashboardPlanCard(plan, isOwner) {
   const duration = getPlanDuration(plan);
   const followers = getPlanFollowerCount(plan);
   const rating = getPlanRating(plan);
+  const difficulty = escapeHtml(getPlanDifficulty(plan));
+  const completion = getPlanCompletion(plan);
+  const progressHTML = !isOwner ? `
+    <div class="dashboard-progress">
+      <div class="dashboard-progress-head">
+        <span>Progress</span>
+        <strong>${completion}%</strong>
+      </div>
+      <div class="progress-bar compact">
+        <div class="progress-fill" style="width: ${completion}%"></div>
+      </div>
+    </div>
+  ` : '';
 
   return `
     <article class="study-card studio-study-card">
@@ -230,8 +253,11 @@ function createDashboardPlanCard(plan, isOwner) {
 
         <div class="study-meta-row">
           <span class="meta-pill">${duration} day${duration === 1 ? '' : 's'}</span>
+          <span class="meta-pill">${difficulty}</span>
           <span class="meta-pill">${followers} follower${followers === 1 ? '' : 's'}</span>
         </div>
+
+        ${progressHTML}
 
         <div class="rating-display">
           <span>${renderStars(rating)}</span>
@@ -241,7 +267,7 @@ function createDashboardPlanCard(plan, isOwner) {
         <div class="study-actions">
           <button type="button" class="btn btn-primary" onclick="openPlanView(${plan.id})">View</button>
           ${isOwner
-            ? `<button type="button" class="btn btn-danger" onclick="deletePlanFromDashboard(${plan.id})">Delete</button>`
+            ? `<button type="button" class="btn btn-secondary" onclick="openPlanner(${plan.id})">Edit</button><button type="button" class="btn btn-danger" onclick="deletePlanFromDashboard(${plan.id})">Delete</button>`
             : `<button type="button" class="btn btn-secondary" onclick="unfollowFromDashboard(${plan.id})">Unfollow</button>`}
         </div>
       </div>
@@ -593,6 +619,22 @@ function createTaskBuilderRow(task = {}) {
   syncTaskBuilderRows();
 }
 
+function fillComposerForm(plan) {
+  const form = document.getElementById('composerForm');
+  const taskStack = document.getElementById('taskStack');
+  if (!form || !taskStack) return;
+
+  form.elements.title.value = plan.title || '';
+  form.elements.description.value = plan.description || '';
+  form.elements.category.value = getPlanSubject(plan);
+  form.elements.durationDays.value = getPlanDuration(plan) || '';
+  form.elements.difficulty.value = getPlanDifficulty(plan);
+
+  taskStack.innerHTML = '';
+  const tasks = Array.isArray(plan.tasks) && plan.tasks.length ? plan.tasks : [{ day: 1 }];
+  tasks.forEach((task) => createTaskBuilderRow(task));
+}
+
 function syncTaskBuilderRows() {
   const rows = Array.from(document.querySelectorAll('.task-composer-card'));
 
@@ -626,6 +668,7 @@ function collectTaskBuilderRows() {
 function bindPlannerForm() {
   const form = document.getElementById('composerForm');
   const appendTaskBtn = document.getElementById('appendTaskBtn');
+  const submitBtn = document.getElementById('composerSubmitBtn');
   if (!form) return;
 
   if (!isAuthenticated()) {
@@ -633,7 +676,20 @@ function bindPlannerForm() {
     return;
   }
 
-  createTaskBuilderRow({ day: 1 });
+  const params = new URLSearchParams(window.location.search);
+  const editPlanId = params.get('id');
+
+  if (editPlanId) {
+    if (submitBtn) submitBtn.textContent = 'Update Plan';
+    studyPlanGateway.getPlanById(editPlanId)
+      .then(fillComposerForm)
+      .catch((error) => {
+        showMessage(error.message || 'Unable to load this plan for editing.', 'error');
+        createTaskBuilderRow({ day: 1 });
+      });
+  } else {
+    createTaskBuilderRow({ day: 1 });
+  }
 
   appendTaskBtn?.addEventListener('click', () => {
     createTaskBuilderRow({ day: document.querySelectorAll('.task-composer-card').length + 1 });
@@ -653,13 +709,16 @@ function bindPlannerForm() {
       title: formData.get('title'),
       description: formData.get('description'),
       subject: formData.get('category'),
+      difficulty: formData.get('difficulty'),
       durationDays: Number(formData.get('durationDays')),
       tasks,
     };
 
     try {
-      const result = await studyPlanGateway.createPlan(payload);
-      showMessage('Plan created successfully.', 'success');
+      const result = editPlanId
+        ? await studyPlanGateway.updatePlan(editPlanId, payload)
+        : await studyPlanGateway.createPlan(payload);
+      showMessage(editPlanId ? 'Plan updated successfully.' : 'Plan created successfully.', 'success');
 
       setTimeout(() => {
         openPlanView(result.id);
@@ -671,6 +730,55 @@ function bindPlannerForm() {
 }
 
 let selectedRating = 0;
+
+function renderCommentList(comments) {
+  if (!comments.length) {
+    return '<div class="empty-state compact"><p>No comments yet. Start the discussion.</p></div>';
+  }
+
+  return comments.map((comment) => `
+    <article class="comment-item">
+      <div class="comment-head">
+        <strong>${escapeHtml(comment.userName || 'Learner')}</strong>
+        <span>${formatDateTime(comment.createdAt)}</span>
+      </div>
+      <p>${escapeHtml(comment.comment)}</p>
+    </article>
+  `).join('');
+}
+
+async function loadPlanComments(planId) {
+  const commentsList = document.getElementById('commentsList');
+  if (!commentsList) return;
+
+  try {
+    const comments = await studyPlanGateway.getPlanComments(planId);
+    commentsList.innerHTML = renderCommentList(comments || []);
+  } catch (error) {
+    commentsList.innerHTML = '<div class="empty-state compact"><p>Comments could not be loaded.</p></div>';
+  }
+}
+
+function bindCommentForm(planId) {
+  const form = document.getElementById('commentForm');
+  if (!form) return;
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const comment = String(formData.get('comment') || '').trim();
+    if (!comment) return;
+
+    try {
+      await studyPlanGateway.addPlanComment(planId, comment);
+      form.reset();
+      await loadPlanComments(planId);
+      showMessage('Comment added.', 'success');
+    } catch (error) {
+      showMessage(error.message || 'Unable to add comment.', 'error');
+    }
+  });
+}
 
 async function hydratePlanView() {
   const container = document.getElementById('studyDetail');
@@ -702,6 +810,7 @@ async function hydratePlanView() {
   try {
     let completedTaskIds = [];
     let isFollowing = false;
+    let isOwner = false;
     let plan;
 
     if (isAuthenticated()) {
@@ -723,7 +832,9 @@ async function hydratePlanView() {
 
       if (profileResult.status === 'fulfilled') {
         const followed = profileResult.value.savedPlans || [];
+        const owned = profileResult.value.ownedPlans || [];
         isFollowing = followed.some((followedPlan) => followedPlan.id === plan.id);
+        isOwner = owned.some((ownedPlan) => ownedPlan.id === plan.id);
       }
     } else {
       plan = await studyPlanGateway.getPlanById(planId);
@@ -735,6 +846,7 @@ async function hydratePlanView() {
     const duration = getPlanDuration(plan);
     const followers = getPlanFollowerCount(plan);
     const rating = getPlanRating(plan);
+    const difficulty = escapeHtml(getPlanDifficulty(plan));
     const tasks = plan.tasks || [];
     const completionPct = tasks.length
       ? Math.round((completedTaskIds.length / tasks.length) * 100)
@@ -777,9 +889,11 @@ async function hydratePlanView() {
 
           <div class="study-meta">
             <span class="meta-pill">${duration} day${duration === 1 ? '' : 's'}</span>
+            <span class="meta-pill">${difficulty}</span>
             <span class="meta-pill">${followers} follower${followers === 1 ? '' : 's'}</span>
             <span class="meta-pill">${tasks.length} task${tasks.length === 1 ? '' : 's'}</span>
           </div>
+          ${isOwner ? `<div class="footer-actions"><button type="button" class="btn btn-secondary" onclick="openPlanner(${plan.id})">Edit Plan</button></div>` : ''}
         </div>
 
         <aside class="study-side">
@@ -859,6 +973,22 @@ async function hydratePlanView() {
               <button type="button" class="btn btn-secondary" onclick="openWorkspace()">Dashboard</button>
             </div>
           </section>
+
+          <section class="study-section">
+            <h2>Comments</h2>
+            <p class="study-section-subtitle">Share notes, questions, or feedback about this plan.</p>
+            ${isAuthenticated()
+              ? `
+                <form id="commentForm" class="comment-form">
+                  <textarea name="comment" rows="3" placeholder="Write a helpful comment..." required></textarea>
+                  <button type="submit" class="btn btn-primary">Post Comment</button>
+                </form>
+              `
+              : '<button type="button" class="btn btn-secondary" onclick="openSignin()">Login to Comment</button>'}
+            <div class="comment-list" id="commentsList">
+              <div class="loading">Loading comments...</div>
+            </div>
+          </section>
         </div>
       </div>
     `;
@@ -879,6 +1009,9 @@ async function hydratePlanView() {
         updateStarDisplay(selectedRating);
       });
     });
+
+    await loadPlanComments(planId);
+    bindCommentForm(planId);
   } catch (error) {
     container.innerHTML = renderEmptyState(
       'Unable to load this plan',
