@@ -63,11 +63,19 @@ const listStudyPlans = async (filters) => {
     const values = [];
     if (filters.search) {
         values.push(`%${filters.search.toLowerCase()}%`);
-        conditions.push('LOWER(title) LIKE $' + values.length);
+        conditions.push(`(
+      LOWER(title) LIKE $${values.length}
+      OR LOWER(description) LIKE $${values.length}
+      OR LOWER(subject) LIKE $${values.length}
+    )`);
     }
     if (filters.subject) {
         values.push(filters.subject);
         conditions.push('subject = $' + values.length);
+    }
+    if (filters.difficulty) {
+        values.push(filters.difficulty);
+        conditions.push('difficulty = $' + values.length);
     }
     if (typeof filters.minRating === 'number') {
         values.push(filters.minRating);

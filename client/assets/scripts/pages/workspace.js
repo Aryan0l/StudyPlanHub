@@ -88,6 +88,27 @@ function getPlanCompletion(plan) {
   return Number(plan.completionRate ?? plan.completion_rate ?? 0);
 }
 
+function getProfileStats(profile) {
+  const ownedPlans = profile.ownedPlans || [];
+  const savedPlans = profile.savedPlans || [];
+  const savedProgress = savedPlans.map((plan) => getPlanCompletion(plan));
+  const completedPlans = savedProgress.filter((completion) => completion >= 100).length;
+  const activePlans = savedProgress.filter((completion) => completion > 0 && completion < 100).length;
+  const averageProgress = savedProgress.length
+    ? Math.round(savedProgress.reduce((sum, completion) => sum + completion, 0) / savedProgress.length)
+    : 0;
+  const creatorReach = ownedPlans.reduce((sum, plan) => sum + getPlanFollowerCount(plan), 0);
+
+  return {
+    createdCount: ownedPlans.length,
+    followedCount: savedPlans.length,
+    completedPlans,
+    activePlans,
+    averageProgress,
+    creatorReach,
+  };
+}
+
 function updateNavigation() {
   const guestNav = document.getElementById('guestNav');
   const memberNav = document.getElementById('memberNav');
@@ -226,6 +247,9 @@ function createDashboardPlanCard(plan, isOwner) {
   const rating = getPlanRating(plan);
   const difficulty = escapeHtml(getPlanDifficulty(plan));
   const completion = getPlanCompletion(plan);
+  const completedBadge = !isOwner && completion >= 100
+    ? '<span class="completion-badge">Completed</span>'
+    : '';
   const progressHTML = !isOwner ? `
     <div class="dashboard-progress">
       <div class="dashboard-progress-head">
@@ -247,7 +271,10 @@ function createDashboardPlanCard(plan, isOwner) {
 
       <div class="study-card-body">
         <div onclick="openPlanView(${plan.id})">
-          <h3 class="study-card-title">${title}</h3>
+          <div class="study-card-title-row">
+            <h3 class="study-card-title">${title}</h3>
+            ${completedBadge}
+          </div>
           <p class="study-description">${description}</p>
         </div>
 
@@ -313,6 +340,9 @@ async function loadHomePlans() {
 
   const librarySearchInput = document.getElementById('librarySearchInput');
   const subjectFilter = document.getElementById('subjectFilter');
+  const difficultyFilter = document.getElementById('difficultyFilter');
+  const ratingFilter = document.getElementById('ratingFilter');
+  const durationFilter = document.getElementById('durationFilter');
   const signalSort = document.getElementById('signalSort');
 
   studyGrid.innerHTML = renderLoadingCards(6);
@@ -321,6 +351,9 @@ async function loadHomePlans() {
     const plans = await studyPlanGateway.getPlans({
       search: librarySearchInput ? librarySearchInput.value.trim() : '',
       category: subjectFilter ? subjectFilter.value : '',
+      difficulty: difficultyFilter ? difficultyFilter.value : '',
+      minRating: ratingFilter ? ratingFilter.value : '',
+      duration: durationFilter ? durationFilter.value : '',
       sortBy: signalSort ? signalSort.value : '',
     });
 
@@ -353,10 +386,16 @@ function setupHomePage() {
   const librarySearchBtn = document.getElementById('librarySearchBtn');
   const librarySearchInput = document.getElementById('librarySearchInput');
   const subjectFilter = document.getElementById('subjectFilter');
+  const difficultyFilter = document.getElementById('difficultyFilter');
+  const ratingFilter = document.getElementById('ratingFilter');
+  const durationFilter = document.getElementById('durationFilter');
   const signalSort = document.getElementById('signalSort');
 
   librarySearchBtn?.addEventListener('click', loadHomePlans);
   subjectFilter?.addEventListener('change', loadHomePlans);
+  difficultyFilter?.addEventListener('change', loadHomePlans);
+  ratingFilter?.addEventListener('change', loadHomePlans);
+  durationFilter?.addEventListener('change', loadHomePlans);
   signalSort?.addEventListener('change', loadHomePlans);
 
   librarySearchInput?.addEventListener('keydown', (event) => {
@@ -436,8 +475,7 @@ function updateDashboardMetrics(profile) {
   const metricsEl = document.getElementById('studioMetrics');
   if (!metricsEl) return;
 
-  const createdCount = (profile.ownedPlans || []).length;
-  const followedCount = (profile.savedPlans || []).length;
+  const stats = getProfileStats(profile);
   const joinedDate = formatDateTime(profile.createdAt, {
     month: 'short',
     year: 'numeric',
@@ -445,12 +483,20 @@ function updateDashboardMetrics(profile) {
 
   metricsEl.innerHTML = `
     <div class="overview-card">
-      <span class="overview-value">${createdCount}</span>
+      <span class="overview-value">${stats.createdCount}</span>
       <span class="overview-label">Plans created</span>
     </div>
     <div class="overview-card">
-      <span class="overview-value">${followedCount}</span>
+      <span class="overview-value">${stats.followedCount}</span>
       <span class="overview-label">Plans followed</span>
+    </div>
+    <div class="overview-card">
+      <span class="overview-value">${stats.completedPlans}</span>
+      <span class="overview-label">Plans completed</span>
+    </div>
+    <div class="overview-card">
+      <span class="overview-value">${stats.averageProgress}%</span>
+      <span class="overview-label">Average progress</span>
     </div>
     <div class="overview-card">
       <span class="overview-value">${escapeHtml(joinedDate)}</span>
@@ -468,8 +514,7 @@ async function hydrateWorkspace() {
   try {
     const profile = await studyPlanGateway.getUserProfile();
     const joinedDate = formatDateTime(profile.createdAt);
-    const createdCount = (profile.ownedPlans || []).length;
-    const followedCount = (profile.savedPlans || []).length;
+    const stats = getProfileStats(profile);
     updateDashboardMetrics(profile);
 
     const learnerInfo = document.getElementById('learnerInfo');
@@ -484,11 +529,15 @@ async function hydrateWorkspace() {
             <div class="learner-stats">
               <div class="learner-row">
                 <span class="learner-row-label">Created</span>
-                <span class="learner-row-value">${createdCount}</span>
+                <span class="learner-row-value">${stats.createdCount}</span>
               </div>
               <div class="learner-row">
                 <span class="learner-row-label">Following</span>
-                <span class="learner-row-value">${followedCount}</span>
+                <span class="learner-row-value">${stats.followedCount}</span>
+              </div>
+              <div class="learner-row">
+                <span class="learner-row-label">Completed</span>
+                <span class="learner-row-value">${stats.completedPlans}</span>
               </div>
             </div>
           </div>
@@ -508,11 +557,27 @@ async function hydrateWorkspace() {
             </div>
             <div class="learner-row">
               <span class="learner-row-label">Plans Created</span>
-              <span class="learner-row-value">${createdCount}</span>
+              <span class="learner-row-value">${stats.createdCount}</span>
             </div>
             <div class="learner-row">
               <span class="learner-row-label">Plans Followed</span>
-              <span class="learner-row-value">${followedCount}</span>
+              <span class="learner-row-value">${stats.followedCount}</span>
+            </div>
+            <div class="learner-row">
+              <span class="learner-row-label">Active Plans</span>
+              <span class="learner-row-value">${stats.activePlans}</span>
+            </div>
+            <div class="learner-row">
+              <span class="learner-row-label">Completed Plans</span>
+              <span class="learner-row-value">${stats.completedPlans}</span>
+            </div>
+            <div class="learner-row">
+              <span class="learner-row-label">Average Progress</span>
+              <span class="learner-row-value">${stats.averageProgress}%</span>
+            </div>
+            <div class="learner-row">
+              <span class="learner-row-label">Creator Reach</span>
+              <span class="learner-row-value">${stats.creatorReach} follower${stats.creatorReach === 1 ? '' : 's'}</span>
             </div>
           </div>
         </div>
@@ -851,6 +916,9 @@ async function hydratePlanView() {
     const completionPct = tasks.length
       ? Math.round((completedTaskIds.length / tasks.length) * 100)
       : 0;
+    const detailBadge = completionPct >= 100
+      ? '<span class="completion-badge detail">Completed</span>'
+      : '';
 
     const tasksHTML = tasks.length
       ? tasks.map((task) => {
@@ -884,7 +952,10 @@ async function hydratePlanView() {
       <section class="study-hero">
         <div class="study-hero-main">
           <span class="study-subject">${subject}</span>
-          <h1>${title}</h1>
+          <div class="study-title-line">
+            <h1>${title}</h1>
+            ${detailBadge}
+          </div>
           <p>${description}</p>
 
           <div class="study-meta">
@@ -934,6 +1005,8 @@ async function hydratePlanView() {
               <div class="progress-bar">
                 <div class="progress-fill" id="progressFill" style="width: ${completionPct}%"></div>
               </div>
+
+              <div id="completionBadgeSlot">${detailBadge}</div>
 
               ${isAuthenticated()
                 ? `<button type="button" class="btn btn-primary" onclick="saveProgress(${planId})">Save Progress</button>`
@@ -1037,10 +1110,14 @@ function onTaskToggle(checkbox) {
   const fill = document.getElementById('progressFill');
   const text = document.getElementById('progressText');
   const value = document.getElementById('progressValue');
+  const badgeSlot = document.getElementById('completionBadgeSlot');
 
   if (fill) fill.style.width = `${pct}%`;
   if (text) text.textContent = `${pct}% complete`;
   if (value) value.textContent = `${checkedCount}/${total}`;
+  if (badgeSlot) {
+    badgeSlot.innerHTML = pct >= 100 ? '<span class="completion-badge detail">Completed</span>' : '';
+  }
 }
 
 async function saveProgress(planId) {
@@ -1049,7 +1126,12 @@ async function saveProgress(planId) {
 
   try {
     await studyPlanGateway.updateProgress(planId, completedTaskIds);
-    showMessage('Progress saved successfully.', 'success');
+    const allCheckboxes = document.querySelectorAll('#taskList input[type="checkbox"]');
+    const completedPlan = allCheckboxes.length > 0 && completedTaskIds.length === allCheckboxes.length;
+    showMessage(
+      completedPlan ? 'Plan completed. Badge unlocked on your dashboard.' : 'Progress saved successfully.',
+      'success',
+    );
   } catch (error) {
     showMessage(error.message || 'Failed to save progress.', 'error');
   }

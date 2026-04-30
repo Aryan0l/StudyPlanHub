@@ -32,6 +32,7 @@ export const createPlan = async (
 export const getPlans = async (query: {
   search?: string;
   subject?: string;
+  difficulty?: string;
   minRating?: number;
   sortBy?: string;
   maxDuration?: number;
@@ -39,6 +40,7 @@ export const getPlans = async (query: {
   return planModel.listStudyPlans({
     search: query.search,
     subject: query.subject,
+    difficulty: query.difficulty,
     minRating: query.minRating,
     sortBy: query.sortBy as 'popular' | 'rating' | 'duration' | undefined,
     maxDuration: query.maxDuration,

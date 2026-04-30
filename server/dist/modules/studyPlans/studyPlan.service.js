@@ -50,6 +50,7 @@ const getPlans = async (query) => {
     return planModel.listStudyPlans({
         search: query.search,
         subject: query.subject,
+        difficulty: query.difficulty,
         minRating: query.minRating,
         sortBy: query.sortBy,
         maxDuration: query.maxDuration,

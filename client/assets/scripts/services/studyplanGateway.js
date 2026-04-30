@@ -249,6 +249,9 @@ class StudyPlanGateway {
 
     if (filters.search) params.append('search', filters.search);
     if (filters.category) params.append('subject', filters.category);
+    if (filters.difficulty) params.append('difficulty', filters.difficulty);
+    if (filters.minRating) params.append('minRating', filters.minRating);
+    if (filters.duration) params.append('duration', filters.duration);
     if (filters.sortBy) params.append('sortBy', filters.sortBy);
 
     return this.request(`/plans?${params.toString()}`, {

@@ -99,6 +99,7 @@ export const findPlanOwner = async (planId: number): Promise<number | null> => {
 export const listStudyPlans = async (filters: {
   search?: string;
   subject?: string;
+  difficulty?: string;
   minRating?: number;
   maxDuration?: number;
   sortBy?: 'popular' | 'rating' | 'duration';
@@ -108,12 +109,21 @@ export const listStudyPlans = async (filters: {
 
   if (filters.search) {
     values.push(`%${filters.search.toLowerCase()}%`);
-    conditions.push('LOWER(title) LIKE $' + values.length);
+    conditions.push(`(
+      LOWER(title) LIKE $${values.length}
+      OR LOWER(description) LIKE $${values.length}
+      OR LOWER(subject) LIKE $${values.length}
+    )`);
   }
 
   if (filters.subject) {
     values.push(filters.subject);
     conditions.push('subject = $' + values.length);
+  }
+
+  if (filters.difficulty) {
+    values.push(filters.difficulty);
+    conditions.push('difficulty = $' + values.length);
   }
 
   if (typeof filters.minRating === 'number') {
