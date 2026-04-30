@@ -1,4 +1,4 @@
-# StudyPlan Hub Test Scripts
+# Planora Test Scripts
 
 Run these scripts from the project root after starting the backend and, for frontend checks, the static client server.
 

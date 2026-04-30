@@ -1,6 +1,6 @@
-# StudyPlan Hub
+# Planora
 
-StudyPlan Hub is a web application for creating, following, rating, and tracking structured study plans. It helps learners turn large goals into daily tasks and keep progress visible in one place.
+Planora is a web application for creating, following, rating, and tracking structured study plans. It helps learners turn large goals into daily tasks and keep progress visible in one place.
 
 ---
 

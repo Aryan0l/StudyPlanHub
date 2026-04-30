@@ -143,7 +143,7 @@ class StudyPlanGateway {
       throw new Error(message);
     }
 
-    throw new Error(lastError?.message || 'Unable to connect to the StudyPlan Hub server.');
+    throw new Error(lastError?.message || 'Unable to connect to the Planora server.');
   }
 
   async refreshAccessToken(preferredBase = this.apiBase) {
