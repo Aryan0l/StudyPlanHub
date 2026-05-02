@@ -113,10 +113,17 @@ function updateNavigation() {
   const guestNav = document.getElementById('guestNav');
   const memberNav = document.getElementById('memberNav');
   const signoutBtn = document.getElementById('signoutBtn');
+  const menuToggle = document.getElementById('mobileMenuToggle');
+  const headerShell = document.querySelector('.topline-shell');
+
+  const closeMobileMenu = () => {
+    headerShell?.classList.remove('nav-open');
+    menuToggle?.setAttribute('aria-expanded', 'false');
+  };
 
   if (isAuthenticated()) {
-    if (guestNav) guestNav.style.display = 'none';
-    if (memberNav) memberNav.style.display = 'flex';
+    if (guestNav) guestNav.hidden = true;
+    if (memberNav) memberNav.hidden = false;
 
     if (signoutBtn) {
       signoutBtn.onclick = async () => {
@@ -125,9 +132,18 @@ function updateNavigation() {
       };
     }
   } else {
-    if (guestNav) guestNav.style.display = 'flex';
-    if (memberNav) memberNav.style.display = 'none';
+    if (guestNav) guestNav.hidden = false;
+    if (memberNav) memberNav.hidden = true;
   }
+
+  menuToggle?.addEventListener('click', () => {
+    const isOpen = headerShell?.classList.toggle('nav-open') || false;
+    menuToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  document.querySelectorAll('.guest-links a, .member-actions a').forEach((link) => {
+    link.addEventListener('click', closeMobileMenu);
+  });
 }
 
 function openSignin() {

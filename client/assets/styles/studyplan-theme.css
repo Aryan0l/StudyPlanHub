@@ -171,6 +171,49 @@ a {
   flex-wrap: wrap;
 }
 
+.guest-links[hidden],
+.member-actions[hidden] {
+  display: none;
+}
+
+.mobile-menu-toggle {
+  display: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 16px;
+  background: rgba(22, 93, 82, 0.1);
+  color: var(--brand-strong);
+  cursor: pointer;
+  place-items: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+  background: rgba(22, 93, 82, 0.16);
+  transform: translateY(-1px);
+}
+
+.mobile-menu-toggle span {
+  display: block;
+  width: 1.45rem;
+  height: 0.18rem;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.topline-shell.nav-open .mobile-menu-toggle span:nth-child(1) {
+  transform: translateY(0.43rem) rotate(45deg);
+}
+
+.topline-shell.nav-open .mobile-menu-toggle span:nth-child(2) {
+  opacity: 0;
+}
+
+.topline-shell.nav-open .mobile-menu-toggle span:nth-child(3) {
+  transform: translateY(-0.43rem) rotate(-45deg);
+}
+
 .nav-link {
   padding: 0.7rem 1rem;
   border-radius: var(--radius-pill);
@@ -1719,13 +1762,66 @@ body[data-page='home'] .page-shell {
 
 @media (max-width: 820px) {
   .topline-shell {
-    align-items: flex-start;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 5.25rem;
+    padding: 0.85rem;
+    border-radius: 24px;
+  }
+
+  .identity-mark {
+    width: 2.65rem;
+    height: 2.65rem;
+    border-radius: 15px;
+  }
+
+  .identity-copy strong {
+    font-size: 1.12rem;
+  }
+
+  .identity-copy span {
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
   }
 
   .guest-links,
   .member-actions {
+    grid-column: 1 / -1;
+    display: none;
     width: 100%;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+    animation: slideDown 0.22s ease;
+  }
+
+  .topline-shell.nav-open .guest-links:not([hidden]),
+  .topline-shell.nav-open .member-actions:not([hidden]) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .guest-links .nav-link,
+  .member-actions .nav-link,
+  .member-actions .btn {
+    width: 100%;
+    justify-content: flex-start;
+    min-height: 2.75rem;
+    padding: 0.72rem 0.9rem;
+  }
+
+  .member-actions .btn {
+    border-radius: var(--radius-pill);
   }
 
   .search-wrapper,
